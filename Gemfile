@@ -5,3 +5,4 @@ gemspec
 
 gem 'grape'
 gem 'dotenv'
+gem 'httparty'
