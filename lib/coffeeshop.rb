@@ -1,5 +1,11 @@
-require "coffeeshop/version"
+require 'grape'
+require 'dotenv'
+
+Dotenv.load
+
+require_relative 'coffeeshop/request'
+require_relative 'coffeeshop/search'
 
 module Coffeeshop
-  # Your code goes here...
+
 end
