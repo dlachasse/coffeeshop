@@ -6,3 +6,4 @@ gemspec
 gem 'grape'
 gem 'dotenv'
 gem 'httparty'
+gem 'rest-client'
