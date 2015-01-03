@@ -9,6 +9,7 @@ class Request < Grape::API
 	def send_query
 		query = Query.new(@query_parameters)
 		url = query.build_uri_parameters
+		puts url
 		response = HTTParty.get(url)
 	end
 

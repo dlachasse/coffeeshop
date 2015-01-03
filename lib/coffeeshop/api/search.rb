@@ -3,12 +3,21 @@ class Search < Request
 	attr_reader :location, :query, :keyword, :opennow, :place_id, :radius, :endpoint, :response_format
 
 	def initialize(options={})
-		@location = options[:location] || nil
+		# default to portland for now
+		@location = options[:location] || '45.5148,-122.6420'
 		@query = options[:query]
-		@keyword = nil
+
+		# default to coffee, don't really plan to search for
+		# anything else...
+		@keyword = options[:keyword] || 'coffee'
+
+		# if set to true, will _only_ return places that are
+		# open in results
 		@opennow = options[:opennow] || nil
-		@radius = options[:radius] || 5
-		@endpoint = options[:type] || :textsearch
+
+		# in meters, defaulting to 3.5 miles
+		@radius = options[:radius] || 5632
+		@endpoint = options[:type] || :nearbysearch
 		@response_format = options[:response_format] || :json
 		super(self)
 	end

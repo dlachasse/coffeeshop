@@ -51,9 +51,9 @@ module Coffeeshop
 		params do
 			requires :place_id, type: String, desc: "Google's proprietary place_id"
 		end
-		get :location do
-			location = details(declared(params))
-			return location
+		get :details do
+			details = details(declared(params))
+			return details
 		end
 
 	end
