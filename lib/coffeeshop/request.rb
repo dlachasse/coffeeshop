@@ -1,4 +1,4 @@
-class Request < Grape::API
+class Request
 
 	attr_accessor :base_url
 

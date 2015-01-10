@@ -21,3 +21,5 @@ tmp
 mkmf.log
 .env
 index.html
+results*
+places*

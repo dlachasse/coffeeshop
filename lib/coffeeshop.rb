@@ -1,59 +1,109 @@
-require 'grape'
 require 'dotenv'
 require 'httparty'
 require 'open-uri'
-require 'rack'
+require 'active_support'
+require 'byebug'
+require 'json'
+require 'sequel'
+require 'sqlite3'
 
 Dotenv.load
 
 require_relative 'coffeeshop/query_tools'
 require_relative 'coffeeshop/request'
 require_relative 'coffeeshop/query'
+require_relative 'coffeeshop/format'
+require_relative 'coffeeshop/database'
 require_relative 'coffeeshop/api/search'
 require_relative 'coffeeshop/api/details'
+require_relative 'coffeeshop/city/portland'
 
 module Coffeeshop
 
-	class API < Grape::API
+	class << self
 
-		version 'v1', using: :path
-		format :json
-		prefix :api
+		def search(params={})
+			@places = Search.new(params).send_query
+			write_places_results
+		end
 
-		helpers do
+		def details(params={})
+			@details = Details.new(params).send_query
+		end
 
-			def search(params={})
-				Search.new(params).send_query
+		def radar(params={})
+			@radar = Radar.new(params).send_query
+		end
+
+		def scan_places
+			contents = JSON.parse(File.read('./places.json'))
+			contents.each do |place|
+				details({ place_id: place["place_id"] })
+				place["details"] = remove_unused_detail_properties(@details.parsed_response["result"])
+				write_complete_results place
 			end
+			format_output 'results'
+		end
 
-			def details(params={})
-				Details.new(params).send_query
+		def write_complete_results place
+			File.open('./results.json', 'a+') do |file|
+				place = remove_unused_place_properties(place)
+				file.write(place.to_json + ",")
 			end
-
 		end
 
-		desc 'List of places close to location'
-		params do
-      optional :location, type: String, desc: "Geolocation coordinates"
-      optional :query, type: String, desc: "Query string for text search"
-      optional :keyword, type: String, desc: "Keyword for nearby search"
-      optional :opennow, type: String, desc: "Only returns currently open locations"
-      optional :radius, type: Integer, desc: "Search radius in miles"
-      optional :endpoint, type: String, desc: "Specifies text or nearby search"
-      optional :response_format, type: String, desc: "Response format"
-   	end
-		get :places do
-			places = search(declared(params))
-			return places
+		def remove_unused_detail_properties place
+			unused_properties = ["address_components", "id", "icon", "international_phone_number", "reference", "scope", "types", "price_level"]
+			place.reject { |k,v| unused_properties.include?(k) }
 		end
 
-		desc 'Details about specific location'
-		params do
-			requires :place_id, type: String, desc: "Google's proprietary place_id"
+		def remove_unused_place_properties place
+			unused_properties = ["icon", "id", "reference", "scope", "types"]
+			place.reject { |k,v| unused_properties.include?(k) }
 		end
-		get :details do
-			details = details(declared(params))
-			return details
+
+		def check_for_more_results
+			next_page_token = @places.parsed_response.fetch("next_page_token", nil)
+			unless next_page_token.nil?
+				sleep(10.seconds)
+				search({ next_page_token: next_page_token })
+				check_for_more_results
+			end
+		end
+
+		def write_places_results
+			File.open('./places.json','a+') do |file|
+				@places.parsed_response["results"].each do |place|
+					file.write "#{place.to_json},"
+				end
+			end
+		end
+
+		def format_output file
+			file_name = "./#{file}.json"
+			snip_trailing_comma file_name
+			wrap_object_in_array file_name
+		end
+
+		def snip_trailing_comma file_name
+			File.truncate(file_name, File.size(file_name) - 1)
+		end
+
+		def wrap_object_in_array file_name
+			contents = File.read(file_name)
+			contents = contents.gsub(/\A/,'[')
+			contents = contents.gsub(/\z/,']')
+			File.open(file_name, 'w') { |file| file.puts contents }
+		end
+
+		def get_places params
+			search(params)
+			check_for_more_results
+			format_output 'places'
+		end
+
+		def get_details params
+			details(params)
 		end
 
 	end

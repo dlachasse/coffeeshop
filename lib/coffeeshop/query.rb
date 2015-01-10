@@ -11,6 +11,8 @@ class Query < Request
 		@radius = query_parameters.radius
 		@endpoint = query_parameters.endpoint
 		@opennow = query_parameters.opennow
+		@types = query_parameters.types
+		@next_page_token = query_parameters.next_page_token
 		@response_format = query_parameters.response_format
 		@base_url = 'https://maps.googleapis.com/maps/api/place/'
 	end
@@ -25,6 +27,7 @@ class Query < Request
 			"query" => @query,
 			"opennow" => @opennow,
 			"placeid" => @place_id,
+			"pagetoken" => @next_page_token,
 			"key" => ENV['API_KEY']
 		}
 		populate_query(query_parameters)
@@ -36,21 +39,18 @@ class Query < Request
 	end
 
 	def set_api_endpoint
-		case @endpoint
-			when :textsearch
-				@base_url << 'textsearch/'
-			when :nearbysearch
-				@base_url << 'nearbysearch/'
-			when :details
-				@base_url << 'details/'
+		if @endpoint.nil?
+			@base_url << 'nearbysearch/'
+		else
+			@base_url << "#{@endpoint.to_s}/"
 		end
 	end
 
 	def set_response_format
-		if @response_format == :json
-			@base_url << 'json?'
-		else
+		if @response_format == :xml
 			@base_url << 'xml?'
+		else
+			@base_url << 'json?'
 		end
 	end
 
