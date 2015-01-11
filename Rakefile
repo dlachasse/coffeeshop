@@ -6,6 +6,19 @@ task :data do
 	Coffeeshop.scan_places
 end
 
+desc 'Use database places to output massive json object'
+task :details do
+	@start = Time.now
+	Coffeeshop.get_details({}, true)
+	@end = Time.now
+	puts "Started #{@start} and ended #{@end}"
+end
+
+desc 'Get radar results'
+task :radar do
+	Coffeeshop.get_radar({})
+end
+
 desc 'Search places'
 task :search, [:location, :query, :keyword, :opennow, :radius, :endpoint, :response_format] do |t, args|
 	args.with_defaults(location: nil, query: nil, keyword: nil, opennow: nil, radius: nil, endpoint: nil, response_format: nil)
@@ -22,11 +35,6 @@ namespace :db do
 
 	desc 'Create database schema'
 	task :schema do
-		Database.new().create_database_schema
-	end
-
-	desc 'Interact with database'
-	task :interact do
 		Database.new
 	end
 

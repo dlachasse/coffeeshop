@@ -27,6 +27,7 @@ class Query < Request
 			"query" => @query,
 			"opennow" => @opennow,
 			"placeid" => @place_id,
+			"types" => @types,
 			"pagetoken" => @next_page_token,
 			"key" => ENV['API_KEY']
 		}

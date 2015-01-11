@@ -14,8 +14,10 @@ require_relative 'coffeeshop/request'
 require_relative 'coffeeshop/query'
 require_relative 'coffeeshop/format'
 require_relative 'coffeeshop/database'
+require_relative 'coffeeshop/result_parser'
 require_relative 'coffeeshop/api/search'
 require_relative 'coffeeshop/api/details'
+require_relative 'coffeeshop/api/radar'
 require_relative 'coffeeshop/city/portland'
 
 module Coffeeshop
@@ -33,6 +35,23 @@ module Coffeeshop
 
 		def radar(params={})
 			@radar = Radar.new(params).send_query
+			ResultParser.new(@radar)
+		end
+
+		def write_results
+			if valid_details_request?
+				@details = @details.parsed_response["result"]
+				unless @details["name"] == 'Starbucks'
+					File.open('./results.json', 'a+') do |file|
+						place = remove_unused_detail_properties
+						file.write(place.to_json + ",")
+					end
+				end
+			end
+		end
+
+		def valid_details_request?
+			@details.parsed_response["status"] != 'INVALID_REQUEST'
 		end
 
 		def scan_places
@@ -52,9 +71,9 @@ module Coffeeshop
 			end
 		end
 
-		def remove_unused_detail_properties place
+		def remove_unused_detail_properties
 			unused_properties = ["address_components", "id", "icon", "international_phone_number", "reference", "scope", "types", "price_level"]
-			place.reject { |k,v| unused_properties.include?(k) }
+			@details.reject { |k,v| unused_properties.include?(k) }
 		end
 
 		def remove_unused_place_properties place
@@ -96,14 +115,34 @@ module Coffeeshop
 			File.open(file_name, 'w') { |file| file.puts contents }
 		end
 
+		def load_coords
+			Portland::LOCATIONS
+		end
+
+		def load_place_ids
+			@db = Database.new.load_all_places
+		end
+
 		def get_places params
 			search(params)
 			check_for_more_results
 			format_output 'places'
 		end
 
-		def get_details params
-			details(params)
+		def get_details params, output=false
+			place_ids = load_place_ids
+			place_ids.each do |place|
+				details(params.merge!(place_id: place[:place_id]))
+				write_results if output
+			end
+			format_output('results.json') if output
+		end
+
+		def get_radar params
+			coords = load_coords
+			coords.each do |coord|
+				radar(params.merge!(location: coord))
+			end
 		end
 
 	end
