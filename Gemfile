@@ -5,7 +5,6 @@ gemspec
 
 gem 'dotenv'
 gem 'httparty'
-gem 'rest-client'
 gem 'byebug'
 gem 'activesupport'
 gem 'sequel'
